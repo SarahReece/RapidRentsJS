@@ -1,0 +1,184 @@
+(function () {
+
+    "use strict";
+
+    angular.module(APPNAME).controller('propertyController', PropertyController);
+
+    PropertyController.$inject = ['$scope', '$baseController', '$propertiesService', '$uibModal']
+
+    function PropertyController($scope, $baseController, $propertiesService, $uibModal) {
+
+        var vm = this;
+        vm.headingInfo = "Properties List Angular";
+        vm.items = null;
+        vm.selectedProperty = null;
+
+        vm.propertyForm = null;
+        vm.employeeFormVisible = false;
+        vm.showSelectedPropertyErrors = false;
+
+        vm.$propertiesService = $propertiesService;
+        vm.$scope = $scope;
+        vm.$uibModal = $uibModal;
+
+        vm.receiveItems = _receiveItems;
+        vm.onPropError = _onPropError;
+        vm.selectProperty = _selectProperty;
+        vm.editProperty = _editProperty;
+        vm.deleteProperty = _deleteProperty;
+        vm.openModal = _openModal;
+        vm.addProperty = _addProperty;
+
+        $baseController.merge(vm, $baseController);
+
+        vm.notify = vm.$propertiesService.getNotifier($scope);
+
+
+        render();
+
+        function render() {
+            vm.$propertiesService.get(vm.receiveItems, vm.onPropError);
+        }
+
+        function _receiveItems(data) {
+
+            vm.notify(function () {
+                vm.items = data.items;
+            });
+        }
+        function _selectProperty(aProp) {
+            vm.selectedProperty = aProp;
+        }
+        function _onPropError(jqXhr, error) {
+            console.error(error);
+        }
+
+        function _editProperty(prop) {
+            vm.selectedProperty = prop;
+
+            vm.openModal();
+        }
+
+        function _addProperty() {
+            vm.selectedProperty = {};
+            vm.openModal();
+
+            vm.save;
+        }
+
+        function _onAddSuccess(data, status, xhr) {
+            vm.$alertService.success("success", "Property successfully added.");
+            render();
+        }
+
+        function _onAddError(jqXHR, textStatus, errorThrown) {
+            vm.$alertService.error("error", "Property was not added.")
+        }
+
+        function _deleteProperty(aProp) {
+
+            vm.selectedProperty = aProp;
+            var propertyData = aProp.id;
+            vm.$propertiesService.delete(aProp.id, _onDeleteSuccess, _onDeleteError);
+        }
+
+        function _onDeleteSuccess(data, status, xhr) {
+            render();
+
+            vm.$alertService.success("success", "Property successfully deleted.");
+        }
+
+        function _onDeleteError(jqXHR, textStatus, errorThrown) {
+            vm.$alertService.error("error", "Property was not deleted.")
+        }
+
+
+        function _openModal() {
+            var modalOptions = {
+                animation: true,
+                //Working controller URL/alias
+                //templateUrl: 'modalContent.html',
+                //controller: 'modalController as mc',
+                templateUrl: 'modalContent.html',
+                controller: 'modalController as pmc', /*changed from mc*/
+                size: 'sm'
+            };
+
+            modalOptions.resolve = {
+                item: function () {
+                    return vm.selectedProperty;
+                }
+
+            };
+
+            var modalInstance = vm.$uibModal.open(modalOptions);
+
+            modalInstance.result.then(_updateProperty, _modalDismissed);
+
+        }
+
+        function _updateProperty(objProperty) {
+
+            var propertyData = objProperty.id;
+            if (!objProperty.id) {
+
+                vm.$propertiesService.add(objProperty, _onAddSuccess, _onAddError);
+            }
+            else {
+                vm.$propertiesService.update(objProperty.id, objProperty, _onUpdateSuccess, _OnUpdateError);
+            }
+        }
+
+        function _modalDismissed() {
+            vm.$alertService.warning("warning", "Modal was dismissed.");
+        }
+
+        function _onUpdateSuccess(data, status, xhr) {
+            vm.$alertService.success("success", "Property successfully updated.");
+        }
+
+        function _OnUpdateError(jqXHR, textStatus, errorThrown) {
+            vm.$alertService.error("Error", "Property was not updated.");
+        }
+
+    }
+})();
+
+(function () {
+    "use strict";
+    angular.module(APPNAME).controller('modalController', ModalController);
+
+    ModalController.$inject = ['$scope', '$baseController', '$uibModalInstance', 'item']
+
+    function ModalController($scope
+        , $baseController
+        , $uibModalInstance
+        , item) {
+        var vm = this;
+
+        $baseController.merge(vm, $baseController);
+
+        vm.$scope = $scope;
+
+        vm.$uibModalInstance = $uibModalInstance;
+
+        vm.selectedProperty = item;
+        vm.showSelectedPropertyErrors = true;
+
+        vm.save = function () {
+
+
+            if (vm.propertyForm.$valid) {
+                vm.$uibModalInstance.close(vm.selectedProperty);
+            }
+            else {
+                vm.$alertService.error("error", "Property input does not meet requirements.");
+            }
+        };
+
+
+        vm.cancel = function () {
+            vm.$uibModalInstance.dismiss('cancel');
+        };
+    }
+})();
