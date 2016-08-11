@@ -1,0 +1,167 @@
+    <script type="text/javascript">
+
+        RapidRents.page.startUp = function () {
+
+            RapidRents.page.initializeValidation();
+
+            $("#submitTenant").on("click", RapidRents.page.handlers.tenantFormSubmit);
+
+            if (RapidRents.page.tenantId) {
+                RapidRents.page.getById();
+            }
+        };
+
+        RapidRents.page.initializeValidation = function () {
+            jQuery.validator.setDefaults({
+                debug: true
+            });
+
+            $('#tenantForm').validate({
+                rules: {
+                    "firstName": {
+                        required: true,
+                        minlength: 2,
+                        maxlength: 25
+                    },
+                    "lastName": {
+                        required: true,
+                        minlength: 2,
+                        maxlength: 25
+                    },
+                    "userId": {
+                        required: true,
+                        minlength: 2,
+                        maxlength: 40
+                    },
+                    "moveInDate": {
+                        required: true,
+                        date: true
+                    },
+                    "moveOutDate": {
+                        required: true,
+                        date: true
+                    },
+                    "leaseTerms": {
+                        required: true
+                    },
+                    "isRentCurrent": {
+                        required: true
+                    },
+                    "inputErrorTest": {
+                        required: true
+                    }
+                },
+                messages: {
+                    "firstName": {
+                        required: "First name is required",
+                        minlength: "Name must be at least 2 letters",
+                        maxlength: "Name cannot be longer than 25 letters"
+                    },
+                    "lastName": {
+                        required: "Last name is required",
+                        minlength: "Must be at least 2 letters",
+                        maxlength: "Cannot be longer than 25 letters"
+                    },
+                    "userId": {
+                        required: "User ID name is required",
+                        minlength: "Must be at least 2 letters",
+                        maxlength: "Cannot be longer than 40 letters"
+                    },
+                    "moveInDate": {
+                        required: "A move in date is required",
+                        date: "You must enter a valid date"
+                    },
+                    "moveOutDate": {
+                        required: "A move out date is required",
+                        date: "You must enter a valid date"
+                    },
+                    "leaseTerms": {
+                        required: "Lease term is required"
+                    },
+                    "isRentCurrent": {
+                        required: "Rent status is required"
+                    },
+                    "inputErrorTest": {
+                        required: "Input required"
+                    },
+                }
+            })
+        };
+
+        RapidRents.page.handlers.tenantFormSubmit = function () {
+
+            if ($('#tenantForm').valid()) {
+
+                if (!RapidRents.page.tenantId) {
+                    var myData = $("#tenantForm").serialize();
+                    RapidRents.services.tenants.add(myData, RapidRents.page.onAddSuccess, RapidRents.page.onAddError);
+                }
+                else {
+
+                    var myData = $("#tenantForm").serialize() + "&id=" + RapidRents.page.tenantId;
+
+
+                    RapidRents.services.tenants.update(RapidRents.page.tenantId, myData, RapidRents.page.onUpdateSuccess, RapidRents.page.onUpdateError);
+
+                }
+            }
+
+        }
+
+        RapidRents.page.onAddSuccess = function (data, status, xhr) {
+            console.log("Submit successful");
+        }
+
+        RapidRents.page.onAddError = function (jqXHR, textStatus, errorThrown) {
+
+            $("#msgWindow").addClass("alert-danger");
+            $("#msgWindow").removeClass("alert-info");
+        }
+
+        RapidRents.page.onUpdateSuccess = function (data, status, xhr) {
+
+            console.log(JSON.stringify(data));
+            $("#msgWindow").removeClass("alert-danger");
+            $("#msgWindow").addClass("alert-info");
+        }
+
+        RapidRents.page.onUpdateError = function (jqXHR, textStatus, errorThrown) {
+
+            $("#msgWindow").addClass("alert-danger");
+            $("#msgWindow").removeClass("alert-info");
+        }
+
+
+        RapidRents.page.getById = function () {
+
+            RapidRents.services.tenants.get(RapidRents.page.tenantId, RapidRents.page.onGetByIdSuccess, RapidRents.page.onGetByIdError);
+        }
+
+        RapidRents.page.onGetByIdSuccess = function (data, status, xhr) {
+
+            RapidRents.page.currentTenant = data.item;
+
+            RapidRents.page.moveInDate = moment(data.item.moveInDate).format('YYYY-MM-DD');
+            RapidRents.page.moveOutDate = moment(data.item.moveOutDate).format('YYYY-MM-DD');
+
+            $(".firstName").val(data.item.firstName);
+            $(".lastName").val(data.item.lastName);
+            $(".userId").val(data.item.userId);
+            $(".moveInDate").val(RapidRents.page.moveInDate);
+            $(".moveOutDate").val(RapidRents.page.moveOutDate);
+            $("select.leaseTerms option:selected").val(data.item.leaseTermsId);
+            $("select.isRentCurrent option:selected").val(data.item.isRentCurrent);
+
+            $('h1').text("Edit Tenant " + RapidRents.page.tenantId);
+
+
+        }
+
+        RapidRents.page.onGetByIdError = function (jqXHR, textStatus, errorThrown) {
+            $("#msgWindow").addClass("alert-danger");
+            $("#msgWindow").removeClass("alert-info");
+        }
+
+
+
+    </script>
