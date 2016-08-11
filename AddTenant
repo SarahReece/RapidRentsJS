@@ -1,3 +1,11 @@
+    @section scripts{
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/sabio.services.tenants.js"></script>
+    <script src="~/assets/admin/widgets/daterangepicker/moment.js"></script>
+    <script>
+        sabio.page.tenantId = '@Model.Item';
+        
+    </script>
     <script type="text/javascript">
 
         RapidRents.page.startUp = function () {
@@ -165,3 +173,4 @@
 
 
     </script>
+}
