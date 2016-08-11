@@ -1,0 +1,352 @@
+@section scripts{
+
+
+
+    <script src="~/Scripts/RapidRents.services.listings.js"></script>
+
+    <script src="~/Scripts/RapidRents.messaging.services.js"></script>
+
+    <script src="~/Scripts/RapidRents/ContactUs/ContactUsService.js"></script>
+
+    <script src="~/Scripts/RapidRents/ContactUs/ContactUsController.js"></script>
+
+    <script src="~/assets/admin/widgets/daterangepicker/moment.js"></script>
+
+    <script type="text/javascript">
+
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME).factory('$listingsService', listingsServiceFactory);
+
+            listingsServiceFactory.$inject = ['$baseService'];
+
+            function listingsServiceFactory($baseService) {
+
+                var aRapidRentsServiceObject = RapidRents.services.listings;
+
+                var newService = $baseService.merge(true, {}, aRapidRentsServiceObject, $baseService);
+
+                return newService;
+            }
+        })();
+
+
+        (function () {
+            "use strict"
+            angular.module(APPNAME).directive('slider', Slider);
+
+            function Slider($timeout) {
+                return {
+                    restrict: 'AE',
+                    replace: true,
+                    scope: {
+                        images: '='
+                    },
+                    link: function (scope, elem, attrs) {
+
+                        var timer;
+                        var sliderFunc = function () {
+                            timer = $timeout(function () {
+                                scope.next();
+                                timer = $timeout(sliderFunc, 5000);
+                            }, 5000);
+                        };
+                        sliderFunc();
+                        scope.$on('$destroy', function () {
+                            $timeout.cancel(timer);
+                        });
+
+                        scope.currentIndex = 0;
+
+                        scope.next = function () {
+                            scope.currentIndex < scope.images.length - 1 ? scope.currentIndex++ : scope.currentIndex = 0;
+                        };
+
+
+                        scope.prev = function () {
+                            scope.currentIndex > 0 ? scope.currentIndex-- : scope.currentIndex = scope.images.length - 1;
+                        };
+                        scope.$watch('currentIndex', function () {
+                            scope.images.forEach(function (image) {
+                                image.visible = false;
+                            });
+
+                            scope.images[scope.currentIndex].visible = true;
+                        });
+                    },
+                    templateUrl: function (tElement, tAttrs) {
+                        return tAttrs.templateUrl;
+                    }
+                };
+            };
+        })();
+
+
+        (function () {
+
+            "use strict";
+
+            angular.module(APPNAME).controller('listingDetailController', ListingDetailController);
+
+            ListingDetailController.$inject = ['$scope', '$baseController', '$listingsService', '$uibModal'];
+
+            function ListingDetailController($scope, $baseController, $listingsService, $uibModal) {
+
+                var vm = this;
+                vm.headingInfo = "Listing detail";
+                vm.items = null;
+                vm.selectedListing = null;
+
+
+                vm.myInterval = 5000;
+                vm.noWrapSlides = false;
+                vm.active = 0;
+                var images = vm.images = [];
+                var currentIndex = 0;
+
+                vm.showSelectedListingErrors = false;
+
+                vm.$listingsService = $listingsService;
+                vm.$scope = $scope;
+                vm.$uibModal = $uibModal;
+
+                vm.receiveItems = _receiveItems;
+                vm.selectListing = _selectListing;
+                vm.onListingError = _onListingError;
+                vm.listingUnavailable = _listingUnavailable;
+                vm.openModal = _openModal;
+
+                $baseController.merge(vm, $baseController);
+                vm.addressId = vm.$RapidRents.baseViewModel.addressId;
+                vm.listingId = vm.$RapidRents.baseViewModel.listingId;
+
+                vm.notify = vm.$listingsService.getNotifier($scope);
+
+                render();
+
+                function render() {
+
+                    if (vm.addressId != 0) {
+                        vm.$listingsService.getListingByAddressId(vm.addressId, vm.receiveItems, vm.onListingError);
+                    }
+                    else if (vm.listingId != 0) {
+                        vm.$listingsService.GetListingByLiId(vm.listingId, vm.receiveItems, vm.onListingError);
+                    }
+                    //vm.$listingsService.getListingByAddressId(vm.addressId, vm.receiveItems, vm.onListingError);
+                }
+
+
+                function _receiveItems(data) {
+
+                    vm.notify(function () {
+                        vm.item = data.item;
+                        _selectListing();
+                    });
+                }
+
+                function _selectListing(aListing) {
+
+                    aListing = vm.item;
+                    console.log(aListing);
+
+                    _listingUnavailable();
+                }
+
+                function _onListingError(jqXhr, error) {
+                    console.error(error);
+                }
+
+                function _listingUnavailable(aListing) {
+                    aListing = vm.item;
+
+                    if (!aListing || aListing.status == 1) {
+                        vm.openModal();
+                    }
+                }
+
+                function _openModal() {
+                    var modalOptions = {
+                        animation: true,
+                        templateUrl: 'modalContent.html',
+                        controller: 'modalController as mc',
+                        size: 'lg',
+                        backdrop: 'static',
+                        keyboard: 'false',
+                    };
+
+                    modalOptions.resolve = {
+                        //item: function () {
+                        //    return vm.item;
+                        //}
+
+                    };
+
+                    var modalInstance = vm.$uibModal.open(modalOptions);
+
+                    modalInstance.result.then();
+
+                }
+            }
+        })();
+
+
+        (function () {
+
+            "use strict";
+
+            angular.module(APPNAME).controller('sliderController', SliderController);
+
+            SliderController.$inject = ['$scope', '$baseController']
+
+            function SliderController($scope, $baseController) {
+                var vm = this;
+
+                vm.images = [{
+                    src: '/images/HouseImg.jpg',
+                    title: 'Picture 1'
+                }, {
+                    src: '/images/HouseImg1.jpg',
+                    title: 'Picture 2'
+                }, {
+                    src: '/images/HouseImg.jpg',
+                    title: 'Picture 3'
+                }, {
+                    src: '/images/HouseImg.jpg',
+                    title: 'Picture 4'
+                }, {
+                    src: '/images/HouseImg.jpg',
+                    title: 'Picture 5'
+                }
+                ]
+            }
+        })();
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME)
+            .controller('modalController', ModalController);
+
+            ModalController.$inject = ['$scope', '$baseController', '$uibModalInstance']
+
+            function ModalController(
+                $scope
+                , $baseController
+                , $uibModalInstance) {
+                var vm = this;
+
+                $baseController.merge(vm, $baseController);
+
+                vm.$scope = $scope;
+                vm.$uibModalInstance = $uibModalInstance;
+
+                vm.goBack = function () {
+                    window.history.back();
+                }
+            }
+        })();
+
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME).filter('utilitiesFilter', utilitiesFilter);
+
+            function utilitiesFilter() {
+
+                return function (utilitiesIncluded) {
+
+                    switch (utilitiesIncluded) {
+                        case 0:
+                            return "None";
+                        case 1:
+                            return "Water";
+                        case 2:
+                            return "Gas";
+                        case 4:
+                            return "Trash";
+                        case 8:
+                            return "Electricity";
+                        case 16:
+                            return "Sewage";
+                    }
+                }
+            }
+        })();
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME).filter('statusFilter', statusFilter);
+
+            function statusFilter() {
+
+                return function (status) {
+
+                    switch (status) {
+                        case 1:
+                            return "Inactive";
+                        case 2:
+                            return "Available soon";
+                        case 3:
+                            return "Inactive," + " " + "Available soon";
+                        case 4:
+                            return "Available now";
+                        case 5:
+                            return "Inactive," + " " + "Available now";
+                        case 6:
+                            return "Available soon," + " " + "Available now";
+                        case 8:
+                            return "Flagged";
+                        case 9:
+                            return "Inactive," + " " + "Flagged";
+                        case 10:
+                            return "Available soon," + " " + "Flagged";
+                        case 12:
+                            return "Available now," + " " + "Flagged";
+                    }
+                }
+            }
+        })();
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME).filter('parkingFilter', parkingFilter);
+
+            function parkingFilter() {
+
+                return function (parking) {
+
+                    switch (parking) {
+                        case false:
+                            return "No";
+                        case true:
+                            return "Yes";
+                    }
+                }
+            }
+        })();
+        (function () {
+            "use strict";
+
+            angular.module(APPNAME).filter('leaseTermsFilter', leaseTermsFilter);
+
+            function leaseTermsFilter() {
+
+                return function (leaseTerms) {
+
+                    switch (leaseTerms) {
+                        case 12:
+                            return "One year lease";
+                        case 24:
+                            return "Two year lease";
+                        case 36:
+                            return "Three year lease";
+                        case 1:
+                            return "Month to month lease";
+                    }
+                }
+            }
+        })();
+    </script>
+}
